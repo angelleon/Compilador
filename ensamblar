@@ -1,0 +1,47 @@
+#!/bin/bash
+
+LANG=es_MX.UTF-8
+export LANG
+
+entrada=foo.asm
+objeto=foo.o
+ejecutable=foo
+confTermObj=/home/angel/.local/obj/confTerm.o
+consoleObj=/home/angel/.local/obj/console.o
+
+function salir
+{
+    echo
+    >&2 echo Ha ocurrido un error
+    >&2 echo Saliendo...
+    exit
+}
+
+if [ -n $1 ]; then # primer argumento no vacio
+    if [ -f $1 ]; then # el archivo existe
+        echo Procesando $1
+    else
+        >&2 echo "No existe el archivo $1"
+        >&2 echo o no puede ser leido
+        salir
+    fi
+else
+    >&2 echo No se ha especificado un archivo de entrada
+    salir
+fi
+
+if [ -n $(grep -E "asm$" $1) ]; then
+    entrada=$1
+    objeto=$(echo $1 | sed s/"\.asm$"/"\.o"/)
+    ejecutable=$(echo $1 | sed s/"\.asm"/""/)
+else
+    >&2 echo Tipo de archivo no compatible
+    >&2 echo Especifique un archivo .asm
+    salir
+fi
+
+echo Ensamblando $entrada en $objeto
+nasm -f elf64 -o $objeto $entrada || salir
+echo Enlazando $objeto en $ejecutable
+gcc -m64 -o $ejecutable $objeto $consoleObj $confTermObj || salir
+echo Tarea completada $(date)
